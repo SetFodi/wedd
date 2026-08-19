@@ -1,78 +1,69 @@
-import { eq, sql } from "drizzle-orm";
-import { getDb } from "@/db";
-import { invitationSettings } from "@/db/schema";
+import { get, put } from "@vercel/blob";
 import {
   DEFAULT_INVITATION_CONTENT,
   normalizeInvitationContent,
   type InvitationContent,
 } from "./invitation-content";
 
-let schemaReady: Promise<void> | undefined;
+const SETTINGS_PATH = "invitation/settings.json";
 
-async function database() {
-  const db = await getDb();
-  schemaReady ??= db
-    .run(sql`
-      CREATE TABLE IF NOT EXISTS invitation_settings (
-        id INTEGER PRIMARY KEY NOT NULL,
-        content TEXT NOT NULL,
-        updated_at INTEGER NOT NULL
-      )
-    `)
-    .then(() => undefined)
-    .catch((error) => {
-      schemaReady = undefined;
-      throw error;
-    });
-  await schemaReady;
-  return db;
-}
+type StoredInvitation = {
+  content?: unknown;
+  updatedAt?: unknown;
+};
 
-async function readFromDatabase(): Promise<InvitationContent> {
-  const db = await database();
-  const [row] = await db
-    .select({ content: invitationSettings.content })
-    .from(invitationSettings)
-    .where(eq(invitationSettings.id, 1))
-    .limit(1);
+type InvitationSnapshot = {
+  content: InvitationContent;
+  etag: string | null;
+};
 
-  if (!row) return DEFAULT_INVITATION_CONTENT;
+async function readFromBlob(): Promise<InvitationSnapshot> {
+  const result = await get(SETTINGS_PATH, {
+    access: "private",
+    useCache: false,
+  });
 
-  try {
-    return normalizeInvitationContent(JSON.parse(row.content));
-  } catch {
-    return DEFAULT_INVITATION_CONTENT;
+  if (!result) {
+    return { content: DEFAULT_INVITATION_CONTENT, etag: null };
   }
+  if (result.statusCode !== 200) {
+    throw new Error(`Unexpected invitation settings response: ${result.statusCode}`);
+  }
+
+  const stored = (await new Response(result.stream).json()) as StoredInvitation;
+  return {
+    content: normalizeInvitationContent(stored.content),
+    etag: result.blob.etag,
+  };
 }
 
 export async function getPublishedInvitation(): Promise<InvitationContent> {
   try {
-    return await readFromDatabase();
+    return (await readFromBlob()).content;
   } catch {
     return DEFAULT_INVITATION_CONTENT;
   }
 }
 
 export async function getEditableInvitation(): Promise<InvitationContent> {
-  return readFromDatabase();
+  return (await readFromBlob()).content;
 }
 
 export async function publishInvitation(value: unknown): Promise<InvitationContent> {
   const content = normalizeInvitationContent(value);
-  const db = await database();
-  await db
-    .insert(invitationSettings)
-    .values({
-      id: 1,
-      content: JSON.stringify(content),
-      updatedAt: new Date(),
-    })
-    .onConflictDoUpdate({
-      target: invitationSettings.id,
-      set: {
-        content: JSON.stringify(content),
-        updatedAt: new Date(),
-      },
-    });
+  const current = await readFromBlob();
+
+  await put(
+    SETTINGS_PATH,
+    JSON.stringify({ content, updatedAt: new Date().toISOString() }),
+    {
+      access: "private",
+      allowOverwrite: current.etag !== null,
+      ifMatch: current.etag ?? undefined,
+      contentType: "application/json; charset=utf-8",
+      cacheControlMaxAge: 60,
+    },
+  );
+
   return content;
 }

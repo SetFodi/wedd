@@ -1,27 +1,83 @@
 import assert from "node:assert/strict";
+import { spawn } from "node:child_process";
 import { access, readFile, readdir } from "node:fs/promises";
-import test from "node:test";
+import { createServer } from "node:net";
+import { fileURLToPath } from "node:url";
+import test, { after, before } from "node:test";
 
 const projectRoot = new URL("../", import.meta.url);
 process.env.ADMIN_PASSWORD = "test-only-admin-password";
 process.env.ADMIN_SESSION_SECRET = "test-only-session-secret-with-sufficient-length";
 
-async function render(path = "/", init = {}) {
-  const workerUrl = new URL("../dist/server/index.js", import.meta.url);
-  workerUrl.searchParams.set("test", `${process.pid}-${Date.now()}`);
-  const { default: worker } = await import(workerUrl.href);
+let serverProcess;
+let serverOrigin;
+let serverOutput = "";
 
+async function availablePort() {
+  const server = createServer();
+  await new Promise((resolve, reject) => {
+    server.once("error", reject);
+    server.listen(0, "127.0.0.1", resolve);
+  });
+  const address = server.address();
+  const port = typeof address === "object" && address ? address.port : null;
+  await new Promise((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
+  if (!port) throw new Error("Could not reserve a test server port.");
+  return port;
+}
+
+before(async () => {
+  const port = await availablePort();
+  serverOrigin = `http://127.0.0.1:${port}`;
+  const env = {
+    ...process.env,
+    HOST: "127.0.0.1",
+    PORT: String(port),
+  };
+  delete env.BLOB_READ_WRITE_TOKEN;
+  delete env.BLOB_STORE_ID;
+  delete env.VERCEL_OIDC_TOKEN;
+
+  serverProcess = spawn(process.execPath, [".output/server/index.mjs"], {
+    cwd: fileURLToPath(projectRoot),
+    env,
+    stdio: ["ignore", "pipe", "pipe"],
+  });
+  serverProcess.stdout.on("data", (chunk) => { serverOutput += chunk; });
+  serverProcess.stderr.on("data", (chunk) => { serverOutput += chunk; });
+
+  const deadline = Date.now() + 10_000;
+  while (Date.now() < deadline) {
+    if (serverProcess.exitCode !== null) {
+      throw new Error(`Test server exited early.\n${serverOutput}`);
+    }
+    try {
+      const response = await fetch(`${serverOrigin}/`);
+      if (response.ok) return;
+    } catch {
+      // The server is still starting.
+    }
+    await new Promise((resolve) => setTimeout(resolve, 50));
+  }
+  throw new Error(`Test server did not become ready.\n${serverOutput}`);
+});
+
+after(async () => {
+  if (!serverProcess || serverProcess.exitCode !== null) return;
+  serverProcess.kill("SIGTERM");
+  await new Promise((resolve) => {
+    serverProcess.once("exit", resolve);
+    setTimeout(resolve, 2_000).unref();
+  });
+});
+
+async function render(path = "/", init = {}) {
   const headers = new Headers(init.headers);
   if (!headers.has("accept")) headers.set("accept", "text/html");
-  if (!headers.has("host")) headers.set("host", "invitation.test");
+  if (!headers.has("x-forwarded-host")) headers.set("x-forwarded-host", "invitation.test");
+  if (!headers.has("x-forwarded-proto")) headers.set("x-forwarded-proto", "https");
 
-  return worker.fetch(
-    new Request(`http://localhost${path}`, { ...init, headers }),
-    {
-      ASSETS: { fetch: async () => new Response("Not found", { status: 404 }) },
-    },
-    { waitUntil() {}, passThroughOnException() {} },
-  );
+  return fetch(`${serverOrigin}${path}`, { ...init, headers });
 }
 
 test("server-renders the complete wedding invitation", async () => {
@@ -69,10 +125,10 @@ test("creates a signed, HTTP-only admin session without exposing the password to
   assert.equal(
     authorizedRead.status,
     503,
-    "a valid session must pass authentication before the test runtime reports its intentionally missing D1 binding",
+    "a valid session must pass authentication before the test runtime reports its intentionally missing Blob credentials",
   );
 
-  const clientRoot = new URL("../dist/client/", import.meta.url);
+  const clientRoot = new URL("../.output/public/", import.meta.url);
   const clientFiles = (await readdir(clientRoot, { recursive: true }))
     .filter((file) => file.endsWith(".js"));
   const clientBundle = (

@@ -10,7 +10,7 @@ A mobile-first Georgian wedding invitation with a cinematic envelope-and-curtain
 - personalized guest greeting through `?to=`
 - editable copy, event details, schedule, fonts, and color palette
 - hidden `/admin` editor protected by a signed HTTP-only session
-- Cloudflare D1 persistence for the published invitation
+- private Vercel Blob persistence for the published invitation
 - downloadable calendar event and responsive layout
 
 ## Local development
@@ -48,7 +48,7 @@ npm run dev
 - invitation: [http://localhost:3000](http://localhost:3000)
 - editor: [http://localhost:3000/admin](http://localhost:3000/admin)
 
-The local D1 state is created under `.wrangler/` and is intentionally excluded from Git.
+The app reads administrator credentials from `.dev.vars`. To test saved content locally, run `vercel env pull .env.local` after linking the Vercel project. That file contains the Blob credentials and is excluded from Git.
 
 ## Guest links
 
@@ -72,12 +72,14 @@ The test suite checks server rendering, admin authentication boundaries, client-
 
 ## Deployment configuration
 
-The project uses the Cloudflare Worker-compatible vinext runtime. Hosting must provide:
+The GitHub repository is connected to the `wedd` project in Vercel's `Andromeda's projects` team. Vinext uses Nitro to emit Vercel Build Output API files during a Vercel build.
 
-- a D1 binding named `DB`
+Production, preview, and development environments need:
+
+- a private Vercel Blob store connected to the project
 - an `ADMIN_PASSWORD` secret
 - an `ADMIN_SESSION_SECRET` secret
 
-The D1 binding is declared in [`.openai/hosting.json`](.openai/hosting.json), and the initial schema is in [`drizzle/0000_sparkling_pet_avengers.sql`](drizzle/0000_sparkling_pet_avengers.sql). The application also creates the singleton settings table defensively on first use.
+Vercel adds the Blob credentials when the store is connected. The public invitation falls back to the checked-in defaults if storage is temporarily unavailable, while the editor reports the storage error instead of pretending that a change was saved.
 
-Do not commit `.dev.vars`, `.env*`, `.wrangler/`, `dist/`, or `.next/`.
+Do not commit `.dev.vars`, `.env*`, `.vercel/`, `.output/`, `.wrangler/`, `dist/`, or `.next/`.

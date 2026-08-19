@@ -3,15 +3,6 @@ const SESSION_SECONDS = 60 * 60 * 24 * 7;
 const encoder = new TextEncoder();
 
 async function runtimeValue(name: "ADMIN_PASSWORD" | "ADMIN_SESSION_SECRET"): Promise<string | undefined> {
-  try {
-    const { env } = await import("cloudflare:workers");
-    const workerEnv = env as unknown as Record<string, unknown>;
-    const value = workerEnv[name];
-    if (typeof value === "string" && value.trim()) return value.trim();
-  } catch {
-    // A plain Node test runner has no Cloudflare runtime module.
-  }
-
   const nodeValue = typeof process !== "undefined" ? process.env[name] : undefined;
   return nodeValue?.trim() || undefined;
 }

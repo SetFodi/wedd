@@ -2,7 +2,7 @@
 
 ## Glossary
 
-- **Published invitation** — the single public configuration rendered at `/`. It contains all editable copy, event details, schedule entries, font choices, and theme colors.
+- **Published invitation** — the single public configuration rendered at `/`. It contains all editable copy, event details, schedule entries, font choices, and theme colors. Vercel Blob stores it as one private JSON object.
 - **Guest personalization** — the optional `?to=` URL value. It replaces the generic guest greeting for that visit without changing the published invitation.
 - **Entrance** — the envelope and curtain film shown before the invitation. Its visible opening labels are editable; the media files and timing remain part of the site presentation.
 - **Administrator** — a person who has entered the private `/admin` password and holds a short-lived, signed, HTTP-only session cookie.
