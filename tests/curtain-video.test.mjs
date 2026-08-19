@@ -131,6 +131,21 @@ test("curtain opening hands off to the hero film without a flash", async () => {
   }
 });
 
+test("keeps the final curtain frame above the envelope while the entrance fades", async () => {
+  const css = await readFile(new URL("../app/globals.css", import.meta.url), "utf8");
+
+  assert.match(
+    css,
+    /\.is-open \.envelope-idle-video\s*\{[^}]*opacity:\s*0\b/,
+    "the idle envelope must stay hidden after the opening film ends",
+  );
+  assert.match(
+    css,
+    /\.is-open \.envelope-opening-video\s*\{[^}]*opacity:\s*1\b/,
+    "the final curtain frame must remain above the envelope until the stage is gone",
+  );
+});
+
 test("uses media-driven envelope and curtain entrances instead of CSS drapes", async () => {
   const [page, css] = await Promise.all([
     readFile(new URL("../app/invitation.tsx", import.meta.url), "utf8"),
