@@ -135,8 +135,8 @@ export const DEFAULT_INVITATION_CONTENT: InvitationContent = {
     year: "2026",
     day: "კვირა",
     time: "17:00",
-    venue: "წინანდლის მამული",
-    location: "კახეთი, საქართველო",
+    venue: "შერატონ ბათუმი",
+    location: "რუსთაველის ქ. 28, ბათუმი",
   },
   entrance: {
     primaryLabel: "გახსენით მოსაწვევი",

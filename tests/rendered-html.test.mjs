@@ -92,10 +92,16 @@ test("server-renders the complete wedding invitation", async () => {
   assert.match(html, /aria-label="მოწვევის გახსნა"/);
   assert.match(html, /გახსენით მოსაწვევი/);
   assert.match(html, /click to open/);
-  assert.match(html, /წინანდლის მამული/);
+  assert.match(html, /ნინო/);
+  assert.match(html, /შერატონ ბათუმი/);
+  assert.match(html, /რუსთაველის ქ\. 28, ბათუმი/);
   assert.match(html, /კალენდარში დამატება/);
   assert.match(html, /ქორწილამდე დარჩენილი დრო/);
   assert.doesNotMatch(html, /codex-preview|Your site is taking shape|react-loading-skeleton/);
+
+  const generalHtml = await (await render("/")).text();
+  assert.match(generalHtml, /ძვირფასო სტუმარო/);
+  assert.doesNotMatch(generalHtml, /ნინო/);
 });
 
 test("creates a signed, HTTP-only admin session without exposing the password to clients", async () => {
@@ -164,7 +170,7 @@ test("emits a share card and removes all starter preview artifacts", async () =>
   assert.match(html, /<title>მეგი &amp; უჩა \| ქორწილის მოსაწვევი<\/title>/);
   assert.match(html, /https:\/\/invitation\.test\/og\.png/);
   assert.doesNotMatch(packageJson, /react-loading-skeleton/);
-  await access(new URL("../public/kakheti-arch.png", import.meta.url));
+  await access(new URL("../public/sheraton-batumi-venue.webp", import.meta.url));
   await access(new URL("../public/og.png", import.meta.url));
   await assert.rejects(access(new URL("app/_sites-preview", projectRoot)));
 });
