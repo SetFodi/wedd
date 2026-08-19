@@ -1,4 +1,4 @@
-# მეგი & უჩა — Wedding Invitation
+Wedding Invitation
 
 [![CI](https://github.com/SetFodi/wedd/actions/workflows/ci.yml/badge.svg)](https://github.com/SetFodi/wedd/actions/workflows/ci.yml)
 
