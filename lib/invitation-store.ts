@@ -12,54 +12,44 @@ type StoredInvitation = {
   updatedAt?: unknown;
 };
 
-type InvitationSnapshot = {
-  content: InvitationContent;
-  etag: string | null;
-};
-
-async function readFromBlob(): Promise<InvitationSnapshot> {
+async function readFromBlob(): Promise<InvitationContent> {
   const result = await get(SETTINGS_PATH, {
     access: "private",
     useCache: false,
   });
 
   if (!result) {
-    return { content: DEFAULT_INVITATION_CONTENT, etag: null };
+    return DEFAULT_INVITATION_CONTENT;
   }
   if (result.statusCode !== 200) {
     throw new Error(`Unexpected invitation settings response: ${result.statusCode}`);
   }
 
   const stored = (await new Response(result.stream).json()) as StoredInvitation;
-  return {
-    content: normalizeInvitationContent(stored.content),
-    etag: result.blob.etag,
-  };
+  return normalizeInvitationContent(stored.content);
 }
 
 export async function getPublishedInvitation(): Promise<InvitationContent> {
   try {
-    return (await readFromBlob()).content;
+    return await readFromBlob();
   } catch {
     return DEFAULT_INVITATION_CONTENT;
   }
 }
 
 export async function getEditableInvitation(): Promise<InvitationContent> {
-  return (await readFromBlob()).content;
+  return readFromBlob();
 }
 
 export async function publishInvitation(value: unknown): Promise<InvitationContent> {
   const content = normalizeInvitationContent(value);
-  const current = await readFromBlob();
 
   await put(
     SETTINGS_PATH,
     JSON.stringify({ content, updatedAt: new Date().toISOString() }),
     {
       access: "private",
-      allowOverwrite: current.etag !== null,
-      ifMatch: current.etag ?? undefined,
+      allowOverwrite: true,
       contentType: "application/json; charset=utf-8",
       cacheControlMaxAge: 60,
     },

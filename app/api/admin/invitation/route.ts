@@ -58,7 +58,11 @@ export async function PUT(request: Request) {
   try {
     const content = await publishInvitation(body.content);
     return json({ content, savedAt: new Date().toISOString() });
-  } catch {
+  } catch (error) {
+    console.error(
+      "[admin-invitation-save]",
+      error instanceof Error ? error.constructor.name : "UnknownError",
+    );
     return json(
       { error: "ცვლილებების შენახვა ვერ მოხერხდა. სცადეთ ხელახლა." },
       { status: 503 },
