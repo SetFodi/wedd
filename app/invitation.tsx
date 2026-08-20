@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  useCallback,
   useEffect,
   useMemo,
   useRef,
@@ -28,6 +29,9 @@ type YouTubePlayer = {
   playVideo: () => void;
   pauseVideo: () => void;
   seekTo: (seconds: number, allowSeekAhead: boolean) => void;
+  getPlayerState: () => number;
+  setPlaybackQuality?: (quality: string) => void;
+  setVolume: (volume: number) => void;
   destroy: () => void;
 };
 
@@ -61,6 +65,10 @@ const ENVELOPE_IDLE_HALF = 0.5;
 const HERO_REVEAL_LEAD_SECONDS = 2.25;
 const MUSIC_VIDEO_ID = "s1ABWNYZaFE";
 const MUSIC_START_SECONDS = 9;
+const MUSIC_CUE_SECONDS = 8.6;
+const MUSIC_INITIAL_VOLUME = 6;
+const MUSIC_TARGET_VOLUME = 55;
+const MUSIC_FADE_DURATION_MS = 5_000;
 
 let youtubeApiPromise: Promise<YouTubeNamespace> | null = null;
 
@@ -135,8 +143,11 @@ export default function Invitation({ content }: { content: InvitationContent }) 
   const envelopeVideo = useRef<HTMLVideoElement>(null);
   const musicPlayerHost = useRef<HTMLDivElement>(null);
   const musicPlayer = useRef<YouTubePlayer | null>(null);
+  const musicPlayerReady = useRef(false);
   const musicShouldPlay = useRef(false);
   const musicHasStarted = useRef(false);
+  const musicCueReached = useRef(false);
+  const musicFadeTimer = useRef<number | null>(null);
   const personalizedGuest = useSyncExternalStore(
     subscribeToLocation,
     getGuestFromLocation,
@@ -146,6 +157,53 @@ export default function Invitation({ content }: { content: InvitationContent }) 
   const opened = introPhase === "opened";
   const heroVisible = opened || introPhase === "hero-revealing";
   const entranceVisible = !opened;
+
+  const clearMusicFade = useCallback(() => {
+    if (musicFadeTimer.current === null) return;
+    window.clearInterval(musicFadeTimer.current);
+    musicFadeTimer.current = null;
+  }, []);
+
+  const startMusicAtCurtain = useCallback((player = musicPlayer.current) => {
+    if (
+      !player
+      || !musicPlayerReady.current
+      || !musicShouldPlay.current
+      || !musicCueReached.current
+    ) return;
+
+    clearMusicFade();
+    if (!musicHasStarted.current) {
+      player.seekTo(MUSIC_START_SECONDS, true);
+      musicHasStarted.current = true;
+    }
+
+    player.setVolume(MUSIC_INITIAL_VOLUME);
+    player.playVideo();
+    if (player.getPlayerState() === 1) setMusicPlaying(true);
+
+    const startedAt = Date.now();
+    musicFadeTimer.current = window.setInterval(() => {
+      const progress = Math.min(1, (Date.now() - startedAt) / MUSIC_FADE_DURATION_MS);
+      const smoothStep = progress * progress * (3 - 2 * progress);
+      const volume = MUSIC_INITIAL_VOLUME
+        + (MUSIC_TARGET_VOLUME - MUSIC_INITIAL_VOLUME) * smoothStep;
+      player.setVolume(Math.round(volume));
+
+      if (progress === 1) clearMusicFade();
+    }, 100);
+  }, [clearMusicFade]);
+
+  const primeMusicPlayback = useCallback((player = musicPlayer.current) => {
+    if (
+      !player
+      || !musicPlayerReady.current
+      || !musicShouldPlay.current
+      || musicCueReached.current
+    ) return;
+    player.setVolume(0);
+    player.playVideo();
+  }, []);
 
   useEffect(() => {
     const tick = () => setTimeLeft(getTimeLeft(content.event.dateIso));
@@ -181,62 +239,69 @@ export default function Invitation({ content }: { content: InvitationContent }) 
 
   useEffect(() => {
     let disposed = false;
+    const playerLoadTimer = window.setTimeout(() => {
+      void loadYouTubeApi()
+        .then((youtube) => {
+          if (disposed || !musicPlayerHost.current || musicPlayer.current) return;
 
-    void loadYouTubeApi()
-      .then((youtube) => {
-        if (disposed || !musicPlayerHost.current || musicPlayer.current) return;
-
-        musicPlayer.current = new youtube.Player(musicPlayerHost.current, {
-          videoId: MUSIC_VIDEO_ID,
-          width: "200",
-          height: "200",
-          playerVars: {
-            autoplay: 0,
-            controls: 0,
-            disablekb: 1,
-            fs: 0,
-            loop: 1,
-            modestbranding: 1,
-            origin: window.location.origin,
-            playlist: MUSIC_VIDEO_ID,
-            playsinline: 1,
-            rel: 0,
-            start: MUSIC_START_SECONDS,
-          },
-          events: {
-            onReady: ({ target }) => {
-              if (!musicShouldPlay.current) return;
-              target.seekTo(MUSIC_START_SECONDS, true);
-              musicHasStarted.current = true;
-              target.playVideo();
+          musicPlayer.current = new youtube.Player(musicPlayerHost.current, {
+            videoId: MUSIC_VIDEO_ID,
+            width: "200",
+            height: "200",
+            playerVars: {
+              autoplay: 0,
+              controls: 0,
+              disablekb: 1,
+              fs: 0,
+              loop: 1,
+              modestbranding: 1,
+              origin: window.location.origin,
+              playlist: MUSIC_VIDEO_ID,
+              playsinline: 1,
+              rel: 0,
+              start: MUSIC_START_SECONDS,
             },
-            onStateChange: ({ data }) => {
-              if (data === 1) setMusicPlaying(true);
-              if (data === -1 || data === 0 || data === 2 || data === 5) {
+            events: {
+              onReady: ({ target }) => {
+                musicPlayerReady.current = true;
+                target.setVolume(0);
+                target.setPlaybackQuality?.("small");
+                if (musicCueReached.current) startMusicAtCurtain(target);
+                else primeMusicPlayback(target);
+              },
+              onStateChange: ({ data }) => {
+                if (data === 1) setMusicPlaying(musicCueReached.current);
+                if (data === -1 || data === 0 || data === 2 || data === 5) {
+                  setMusicPlaying(false);
+                }
+              },
+              onError: () => {
+                clearMusicFade();
+                musicPlayerReady.current = false;
+                setMusicEnabled(false);
                 setMusicPlaying(false);
-              }
+                musicShouldPlay.current = false;
+              },
             },
-            onError: () => {
-              setMusicEnabled(false);
-              setMusicPlaying(false);
-              musicShouldPlay.current = false;
-            },
-          },
+          });
+        })
+        .catch(() => {
+          if (!disposed) {
+            setMusicEnabled(false);
+            setMusicPlaying(false);
+          }
         });
-      })
-      .catch(() => {
-        if (!disposed) {
-          setMusicEnabled(false);
-          setMusicPlaying(false);
-        }
-      });
+    }, 1_500);
 
     return () => {
       disposed = true;
+      window.clearTimeout(playerLoadTimer);
+      clearMusicFade();
       musicPlayer.current?.destroy();
       musicPlayer.current = null;
+      musicPlayerReady.current = false;
     };
-  }, []);
+  }, [clearMusicFade, primeMusicPlayback, startMusicAtCurtain]);
 
   const calendarHref = useMemo(() => {
     const startsAt = eventDate(content.event.dateIso);
@@ -279,22 +344,25 @@ export default function Invitation({ content }: { content: InvitationContent }) 
     setMusicEnabled(shouldPlay);
 
     const player = musicPlayer.current;
-    if (!player) return;
+    if (!player || !musicPlayerReady.current) return;
 
     if (!shouldPlay) {
+      clearMusicFade();
       player.pauseVideo();
       setMusicPlaying(false);
       return;
     }
 
-    if (!musicHasStarted.current) {
-      player.seekTo(MUSIC_START_SECONDS, true);
-      musicHasStarted.current = true;
-    }
-    player.playVideo();
+    if (musicCueReached.current) startMusicAtCurtain(player);
+    else primeMusicPlayback(player);
   };
 
   const finishEntrance = () => {
+    if (!musicCueReached.current) {
+      musicCueReached.current = true;
+      startMusicAtCurtain();
+    }
+
     const video = heroVideo.current;
     if (video && !window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
       video.currentTime = 0;
@@ -309,7 +377,9 @@ export default function Invitation({ content }: { content: InvitationContent }) 
     setMusicPlayback(true);
 
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      setIntroPhase("opened");
+      musicCueReached.current = true;
+      startMusicAtCurtain();
+      finishEntrance();
       return;
     }
 
@@ -336,9 +406,15 @@ export default function Invitation({ content }: { content: InvitationContent }) 
 
   const revealHeroBeforeHandoff = () => {
     const video = envelopeVideo.current;
+    if (!video) return;
+
+    if (!musicCueReached.current && video.currentTime >= MUSIC_CUE_SECONDS) {
+      musicCueReached.current = true;
+      startMusicAtCurtain();
+    }
+
     if (
       introPhase !== "envelope-opening"
-      || !video
       || !Number.isFinite(video.duration)
       || video.duration - video.currentTime > HERO_REVEAL_LEAD_SECONDS
     ) return;

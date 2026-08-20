@@ -211,7 +211,7 @@ test("uses media-driven envelope and curtain entrances instead of CSS drapes", a
   );
 });
 
-test("starts the requested song from its first lyric when the envelope opens", async () => {
+test("cues the requested song on the first curtain movement with a soft fade", async () => {
   const [page, css] = await Promise.all([
     readFile(new URL("../app/invitation.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/globals.css", import.meta.url), "utf8"),
@@ -219,11 +219,17 @@ test("starts the requested song from its first lyric when the envelope opens", a
 
   assert.match(page, /const MUSIC_VIDEO_ID = "s1ABWNYZaFE";/);
   assert.match(page, /const MUSIC_START_SECONDS = 9;/);
+  assert.match(page, /const MUSIC_CUE_SECONDS = 8\.6;/);
+  assert.match(page, /const MUSIC_INITIAL_VOLUME = 6;/);
+  assert.match(page, /const MUSIC_TARGET_VOLUME = 55;/);
+  assert.match(page, /const MUSIC_FADE_DURATION_MS = 5_000;/);
   assert.match(
     page,
-    /const openEnvelope = \(\) => \{[\s\S]*?setMusicPlayback\(true\);/,
-    "opening the invitation must request music in the original tap event",
+    /video\.currentTime >= MUSIC_CUE_SECONDS[\s\S]*?startMusicAtCurtain\(\);/,
+    "the curtain frame, not the envelope tap, must cue audible playback",
   );
+  assert.match(page, /window\.setTimeout\([\s\S]*?loadYouTubeApi\(\)[\s\S]*?1_500\)/);
+  assert.match(page, /smoothStep = progress \* progress \* \(3 - 2 \* progress\)/);
   assert.match(page, /className=\{`music-toggle/);
   assert.match(page, /aria-pressed=\{musicEnabled\}/);
   assert.match(css, /\.music-toggle\.is-playing \.music-equalizer i/);
