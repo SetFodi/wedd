@@ -230,6 +230,16 @@ test("cues the requested song on the first curtain movement with a soft fade", a
   );
   assert.match(page, /window\.setTimeout\([\s\S]*?loadYouTubeApi\(\)[\s\S]*?1_500\)/);
   assert.match(page, /smoothStep = progress \* progress \* \(3 - 2 \* progress\)/);
+  assert.match(
+    page,
+    /const primeMusicPlayback[\s\S]*?player\.mute\(\);[\s\S]*?player\.playVideo\(\);/,
+    "the phone-audio unlock must use the player's mute state, not volume zero",
+  );
+  assert.match(
+    page,
+    /const startMusicAtCurtain[\s\S]*?player\.seekTo\(MUSIC_START_SECONDS, true\);[\s\S]*?player\.setVolume\(MUSIC_INITIAL_VOLUME\);[\s\S]*?player\.unMute\(\);[\s\S]*?player\.playVideo\(\);/,
+    "the lyric may become audible only after the curtain cue seeks to its start",
+  );
   assert.match(page, /className=\{`music-toggle/);
   assert.match(page, /aria-pressed=\{musicEnabled\}/);
   assert.match(css, /\.music-toggle\.is-playing \.music-equalizer i/);

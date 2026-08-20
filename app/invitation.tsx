@@ -28,6 +28,8 @@ type InvitationStyle = CSSProperties & Record<`--${string}`, string>;
 type YouTubePlayer = {
   playVideo: () => void;
   pauseVideo: () => void;
+  mute: () => void;
+  unMute: () => void;
   seekTo: (seconds: number, allowSeekAhead: boolean) => void;
   getPlayerState: () => number;
   setPlaybackQuality?: (quality: string) => void;
@@ -173,12 +175,14 @@ export default function Invitation({ content }: { content: InvitationContent }) 
     ) return;
 
     clearMusicFade();
+    player.mute();
     if (!musicHasStarted.current) {
       player.seekTo(MUSIC_START_SECONDS, true);
       musicHasStarted.current = true;
     }
 
     player.setVolume(MUSIC_INITIAL_VOLUME);
+    player.unMute();
     player.playVideo();
     if (player.getPlayerState() === 1) setMusicPlaying(true);
 
@@ -201,7 +205,7 @@ export default function Invitation({ content }: { content: InvitationContent }) 
       || !musicShouldPlay.current
       || musicCueReached.current
     ) return;
-    player.setVolume(0);
+    player.mute();
     player.playVideo();
   }, []);
 
@@ -264,7 +268,7 @@ export default function Invitation({ content }: { content: InvitationContent }) 
             events: {
               onReady: ({ target }) => {
                 musicPlayerReady.current = true;
-                target.setVolume(0);
+                target.mute();
                 target.setPlaybackQuality?.("small");
                 if (musicCueReached.current) startMusicAtCurtain(target);
                 else primeMusicPlayback(target);
