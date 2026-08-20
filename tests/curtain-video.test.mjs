@@ -210,3 +210,22 @@ test("uses media-driven envelope and curtain entrances instead of CSS drapes", a
     `combined entrance must include the envelope reveal and the complete curtain opening, got ${entranceDuration}s`,
   );
 });
+
+test("starts the requested song from its first lyric when the envelope opens", async () => {
+  const [page, css] = await Promise.all([
+    readFile(new URL("../app/invitation.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/globals.css", import.meta.url), "utf8"),
+  ]);
+
+  assert.match(page, /const MUSIC_VIDEO_ID = "s1ABWNYZaFE";/);
+  assert.match(page, /const MUSIC_START_SECONDS = 9;/);
+  assert.match(
+    page,
+    /const openEnvelope = \(\) => \{[\s\S]*?setMusicPlayback\(true\);/,
+    "opening the invitation must request music in the original tap event",
+  );
+  assert.match(page, /className=\{`music-toggle/);
+  assert.match(page, /aria-pressed=\{musicEnabled\}/);
+  assert.match(css, /\.music-toggle\.is-playing \.music-equalizer i/);
+  assert.doesNotMatch(page, /<audio\b/, "copyrighted audio must stay embedded through YouTube");
+});

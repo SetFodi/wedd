@@ -24,8 +24,72 @@ type TimeLeft = {
 type IntroPhase = "envelope" | "envelope-opening" | "hero-revealing" | "opened";
 type InvitationStyle = CSSProperties & Record<`--${string}`, string>;
 
+type YouTubePlayer = {
+  playVideo: () => void;
+  pauseVideo: () => void;
+  seekTo: (seconds: number, allowSeekAhead: boolean) => void;
+  destroy: () => void;
+};
+
+type YouTubePlayerEvent = { target: YouTubePlayer };
+type YouTubePlayerStateEvent = YouTubePlayerEvent & { data: number };
+type YouTubeNamespace = {
+  Player: new (
+    element: HTMLElement,
+    options: {
+      videoId: string;
+      width: string;
+      height: string;
+      playerVars: Record<string, string | number>;
+      events: {
+        onReady: (event: YouTubePlayerEvent) => void;
+        onStateChange: (event: YouTubePlayerStateEvent) => void;
+        onError: () => void;
+      };
+    },
+  ) => YouTubePlayer;
+};
+
+declare global {
+  interface Window {
+    YT?: YouTubeNamespace;
+    onYouTubeIframeAPIReady?: () => void;
+  }
+}
+
 const ENVELOPE_IDLE_HALF = 0.5;
 const HERO_REVEAL_LEAD_SECONDS = 2.25;
+const MUSIC_VIDEO_ID = "s1ABWNYZaFE";
+const MUSIC_START_SECONDS = 9;
+
+let youtubeApiPromise: Promise<YouTubeNamespace> | null = null;
+
+function loadYouTubeApi(): Promise<YouTubeNamespace> {
+  if (window.YT?.Player) return Promise.resolve(window.YT);
+  if (youtubeApiPromise) return youtubeApiPromise;
+
+  youtubeApiPromise = new Promise((resolve, reject) => {
+    const previousReadyHandler = window.onYouTubeIframeAPIReady;
+    window.onYouTubeIframeAPIReady = () => {
+      previousReadyHandler?.();
+      if (window.YT?.Player) resolve(window.YT);
+      else reject(new Error("YouTube player API did not initialize."));
+    };
+
+    const existingScript = document.querySelector<HTMLScriptElement>(
+      'script[src="https://www.youtube.com/iframe_api"]',
+    );
+    if (existingScript) return;
+
+    const script = document.createElement("script");
+    script.src = "https://www.youtube.com/iframe_api";
+    script.async = true;
+    script.onerror = () => reject(new Error("YouTube player API could not load."));
+    document.head.appendChild(script);
+  });
+
+  return youtubeApiPromise;
+}
 
 function eventDate(dateIso: string): Date {
   const date = new Date(dateIso);
@@ -64,9 +128,15 @@ function calendarTimestamp(date: Date): string {
 export default function Invitation({ content }: { content: InvitationContent }) {
   const [introPhase, setIntroPhase] = useState<IntroPhase>("envelope");
   const [timeLeft, setTimeLeft] = useState<TimeLeft | null>(null);
+  const [musicEnabled, setMusicEnabled] = useState(false);
+  const [musicPlaying, setMusicPlaying] = useState(false);
   const heroVideo = useRef<HTMLVideoElement>(null);
   const envelopeIdleVideo = useRef<HTMLVideoElement>(null);
   const envelopeVideo = useRef<HTMLVideoElement>(null);
+  const musicPlayerHost = useRef<HTMLDivElement>(null);
+  const musicPlayer = useRef<YouTubePlayer | null>(null);
+  const musicShouldPlay = useRef(false);
+  const musicHasStarted = useRef(false);
   const personalizedGuest = useSyncExternalStore(
     subscribeToLocation,
     getGuestFromLocation,
@@ -109,6 +179,65 @@ export default function Invitation({ content }: { content: InvitationContent }) 
     return () => observer.disconnect();
   }, [opened]);
 
+  useEffect(() => {
+    let disposed = false;
+
+    void loadYouTubeApi()
+      .then((youtube) => {
+        if (disposed || !musicPlayerHost.current || musicPlayer.current) return;
+
+        musicPlayer.current = new youtube.Player(musicPlayerHost.current, {
+          videoId: MUSIC_VIDEO_ID,
+          width: "200",
+          height: "200",
+          playerVars: {
+            autoplay: 0,
+            controls: 0,
+            disablekb: 1,
+            fs: 0,
+            loop: 1,
+            modestbranding: 1,
+            origin: window.location.origin,
+            playlist: MUSIC_VIDEO_ID,
+            playsinline: 1,
+            rel: 0,
+            start: MUSIC_START_SECONDS,
+          },
+          events: {
+            onReady: ({ target }) => {
+              if (!musicShouldPlay.current) return;
+              target.seekTo(MUSIC_START_SECONDS, true);
+              musicHasStarted.current = true;
+              target.playVideo();
+            },
+            onStateChange: ({ data }) => {
+              if (data === 1) setMusicPlaying(true);
+              if (data === -1 || data === 0 || data === 2 || data === 5) {
+                setMusicPlaying(false);
+              }
+            },
+            onError: () => {
+              setMusicEnabled(false);
+              setMusicPlaying(false);
+              musicShouldPlay.current = false;
+            },
+          },
+        });
+      })
+      .catch(() => {
+        if (!disposed) {
+          setMusicEnabled(false);
+          setMusicPlaying(false);
+        }
+      });
+
+    return () => {
+      disposed = true;
+      musicPlayer.current?.destroy();
+      musicPlayer.current = null;
+    };
+  }, []);
+
   const calendarHref = useMemo(() => {
     const startsAt = eventDate(content.event.dateIso);
     const endsAt = new Date(startsAt.getTime() + 6 * 60 * 60 * 1_000);
@@ -145,6 +274,26 @@ export default function Invitation({ content }: { content: InvitationContent }) 
     document.getElementById("invitation-note")?.scrollIntoView({ behavior: "smooth" });
   };
 
+  const setMusicPlayback = (shouldPlay: boolean) => {
+    musicShouldPlay.current = shouldPlay;
+    setMusicEnabled(shouldPlay);
+
+    const player = musicPlayer.current;
+    if (!player) return;
+
+    if (!shouldPlay) {
+      player.pauseVideo();
+      setMusicPlaying(false);
+      return;
+    }
+
+    if (!musicHasStarted.current) {
+      player.seekTo(MUSIC_START_SECONDS, true);
+      musicHasStarted.current = true;
+    }
+    player.playVideo();
+  };
+
   const finishEntrance = () => {
     const video = heroVideo.current;
     if (video && !window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
@@ -156,6 +305,8 @@ export default function Invitation({ content }: { content: InvitationContent }) 
 
   const openEnvelope = () => {
     if (introPhase !== "envelope") return;
+
+    setMusicPlayback(true);
 
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
       setIntroPhase("opened");
@@ -325,6 +476,24 @@ export default function Invitation({ content }: { content: InvitationContent }) 
           <small>{content.footer.date}</small>
         </div>
       </footer>
+
+      <div className="youtube-music-player" aria-hidden="true">
+        <div ref={musicPlayerHost} />
+      </div>
+      <button
+        className={`music-toggle${musicEnabled ? " is-enabled" : ""}${musicPlaying ? " is-playing" : ""}`}
+        type="button"
+        aria-label={musicEnabled ? "მუსიკის გამორთვა" : "მუსიკის ჩართვა"}
+        aria-pressed={musicEnabled}
+        title="Frank Sinatra — The World We Knew (Over and Over)"
+        onClick={() => setMusicPlayback(!musicShouldPlay.current)}
+      >
+        <span className="music-equalizer" aria-hidden="true">
+          <i />
+          <i />
+          <i />
+        </span>
+      </button>
 
       <div className="envelope-stage" aria-hidden={!entranceVisible}>
         <video

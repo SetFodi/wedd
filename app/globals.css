@@ -203,13 +203,27 @@ footer small::before, footer small::after { content: ""; width: 34px; height: 1p
 .intro-hero-revealing .envelope-open-cue { opacity: 0; transform: translate(-50%, -42%); animation: none; }
 .is-open .envelope-stage { opacity: 0; visibility: hidden; pointer-events: none; transition-delay: 0s, .42s; }
 
+.youtube-music-player { position: fixed; z-index: 0; left: 50%; top: 50%; width: 200px; height: 200px; overflow: hidden; opacity: .001; transform: translate(-50%, -50%); pointer-events: none; }
+.youtube-music-player iframe { width: 200px; height: 200px; border: 0; }
+.music-toggle { position: fixed; z-index: 45; top: max(18px, env(safe-area-inset-top)); right: max(18px, calc((100vw - 520px) / 2 + 18px)); width: 48px; height: 48px; display: grid; place-items: center; padding: 0; border: 1px solid color-mix(in srgb, var(--gold) 48%, transparent); border-radius: 50%; color: var(--ink); background: color-mix(in srgb, var(--ivory) 82%, transparent); box-shadow: 0 8px 28px rgba(23,50,83,.13), inset 0 0 0 5px rgba(255,255,255,.28); backdrop-filter: blur(12px); opacity: 0; transform: translateY(-8px); pointer-events: none; cursor: pointer; transition: opacity .45s ease, transform .45s ease, color .25s ease, background .25s ease; -webkit-tap-highlight-color: transparent; }
+.intro-envelope-opening .music-toggle, .intro-hero-revealing .music-toggle, .is-open .music-toggle { opacity: 1; transform: none; pointer-events: auto; }
+.music-toggle.is-enabled { color: var(--gold); background: color-mix(in srgb, var(--ivory) 91%, transparent); }
+.music-equalizer { position: relative; width: 19px; height: 17px; display: flex; align-items: end; justify-content: center; gap: 3px; }
+.music-equalizer i { width: 3px; height: 45%; border-radius: 2px; background: currentColor; transform-origin: bottom; animation: music-level 1s ease-in-out infinite alternate; animation-play-state: paused; }
+.music-equalizer i:nth-child(2) { height: 90%; animation-duration: .72s; animation-delay: -.35s; }
+.music-equalizer i:nth-child(3) { height: 65%; animation-duration: .86s; animation-delay: -.18s; }
+.music-toggle.is-playing .music-equalizer i { animation-play-state: running; }
+.music-toggle:not(.is-enabled) .music-equalizer::after { content: ""; position: absolute; left: -2px; top: 8px; width: 23px; height: 1px; border-radius: 1px; background: currentColor; transform: rotate(-42deg); box-shadow: 0 0 0 2px color-mix(in srgb, var(--ivory) 70%, transparent); }
+
 @keyframes breathe { 50% { transform: scaleY(.55); opacity: .35; } }
 @keyframes cue-float { 50% { transform: translate(-50%, calc(-50% - 4px)); opacity: .66; } }
+@keyframes music-level { to { transform: scaleY(.38); opacity: .58; } }
 
 @media (min-width: 700px) {
   body { padding: 24px 0; }
   .invitation { border-radius: 2px; }
   .envelope-stage { top: 24px; bottom: 24px; }
+  .music-toggle { top: 42px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
