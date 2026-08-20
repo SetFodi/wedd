@@ -21,10 +21,11 @@ type TimeLeft = {
   seconds: number;
 };
 
-type IntroPhase = "envelope" | "envelope-opening" | "opened";
+type IntroPhase = "envelope" | "envelope-opening" | "hero-revealing" | "opened";
 type InvitationStyle = CSSProperties & Record<`--${string}`, string>;
 
 const ENVELOPE_IDLE_HALF = 0.5;
+const HERO_REVEAL_LEAD_SECONDS = 2.25;
 
 function eventDate(dateIso: string): Date {
   const date = new Date(dateIso);
@@ -73,6 +74,7 @@ export default function Invitation({ content }: { content: InvitationContent }) 
   );
   const guest = personalizedGuest || content.hero.guestFallback;
   const opened = introPhase === "opened";
+  const heroVisible = opened || introPhase === "hero-revealing";
   const entranceVisible = !opened;
 
   useEffect(() => {
@@ -181,9 +183,21 @@ export default function Invitation({ content }: { content: InvitationContent }) 
     void video.play().catch(finishEntrance);
   };
 
+  const revealHeroBeforeHandoff = () => {
+    const video = envelopeVideo.current;
+    if (
+      introPhase !== "envelope-opening"
+      || !video
+      || !Number.isFinite(video.duration)
+      || video.duration - video.currentTime > HERO_REVEAL_LEAD_SECONDS
+    ) return;
+
+    setIntroPhase("hero-revealing");
+  };
+
   return (
     <main
-      className={`invitation intro-${introPhase}${opened ? " is-open" : ""}`}
+      className={`invitation intro-${introPhase}${heroVisible ? " is-hero-visible" : ""}${opened ? " is-open" : ""}`}
       style={themeStyle}
     >
       <section className="hero" aria-labelledby="couple-name">
@@ -245,18 +259,20 @@ export default function Invitation({ content }: { content: InvitationContent }) 
       </section>
 
       <section className="schedule-section">
-        <div data-reveal>
-          <p className="section-kicker">{content.schedule.kicker}</p>
-          <h2>{content.schedule.title}</h2>
+        <div className="schedule-panel">
+          <div className="schedule-heading" data-reveal>
+            <p className="section-kicker">{content.schedule.kicker}</p>
+            <h2>{content.schedule.title}</h2>
+          </div>
+          <ol className="schedule" data-reveal>
+            {content.schedule.items.map((item, index) => (
+              <li key={`${item.time}-${index}`}>
+                <time>{item.time}</time>
+                <span><b>{item.title}</b><small>{item.detail}</small></span>
+              </li>
+            ))}
+          </ol>
         </div>
-        <ol className="schedule" data-reveal>
-          {content.schedule.items.map((item, index) => (
-            <li key={`${item.time}-${index}`}>
-              <time>{item.time}</time>
-              <span><b>{item.title}</b><small>{item.detail}</small></span>
-            </li>
-          ))}
-        </ol>
       </section>
 
       <section className="venue-section">
@@ -282,28 +298,32 @@ export default function Invitation({ content }: { content: InvitationContent }) 
       </section>
 
       <section className="countdown-section" aria-label={content.countdown.ariaLabel}>
-        <p className="section-kicker">{content.countdown.kicker}</p>
-        <div className="countdown" data-reveal>
-          {[
-            [timeLeft?.days ?? "—", content.countdown.days],
-            [timeLeft?.hours ?? "—", content.countdown.hours],
-            [timeLeft?.minutes ?? "—", content.countdown.minutes],
-            [timeLeft?.seconds ?? "—", content.countdown.seconds],
-          ].map(([value, label]) => (
-            <div key={label}>
-              <strong>{value}</strong>
-              <span>{label}</span>
-            </div>
-          ))}
+        <div className="countdown-panel" data-reveal>
+          <p className="section-kicker">{content.countdown.kicker}</p>
+          <div className="countdown">
+            {[
+              [timeLeft?.days ?? "—", content.countdown.days],
+              [timeLeft?.hours ?? "—", content.countdown.hours],
+              [timeLeft?.minutes ?? "—", content.countdown.minutes],
+              [timeLeft?.seconds ?? "—", content.countdown.seconds],
+            ].map(([value, label]) => (
+              <div key={label}>
+                <strong>{value}</strong>
+                <span>{label}</span>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
       <footer>
-        <div className="footer-monogram" aria-hidden="true">{content.couple.monogram}</div>
-        <p>{content.footer.text.split("\n").map((line, index, lines) => (
-          <span key={`${line}-${index}`}>{line}{index < lines.length - 1 && <br />}</span>
-        ))}</p>
-        <small>{content.footer.date}</small>
+        <div className="footer-card" data-reveal>
+          <div className="footer-monogram" aria-hidden="true">{content.couple.monogram}</div>
+          <p>{content.footer.text.split("\n").map((line, index, lines) => (
+            <span key={`${line}-${index}`}>{line}{index < lines.length - 1 && <br />}</span>
+          ))}</p>
+          <small>{content.footer.date}</small>
+        </div>
       </footer>
 
       <div className="envelope-stage" aria-hidden={!entranceVisible}>
@@ -326,6 +346,7 @@ export default function Invitation({ content }: { content: InvitationContent }) 
           playsInline
           preload="auto"
           poster="/videos/envelope-closed.png"
+          onTimeUpdate={revealHeroBeforeHandoff}
           onEnded={finishEntrance}
           onError={finishEntrance}
         >

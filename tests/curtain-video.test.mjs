@@ -146,6 +146,39 @@ test("keeps the final curtain frame above the envelope while the entrance fades"
   );
 });
 
+test("begins the hero reveal over the settled final garden frames", async () => {
+  const [page, css] = await Promise.all([
+    readFile(new URL("../app/invitation.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/globals.css", import.meta.url), "utf8"),
+  ]);
+
+  assert.match(
+    page,
+    /const HERO_REVEAL_LEAD_SECONDS = 2\.25;/,
+    "the reveal should begin at the frame where the doorway has settled",
+  );
+  assert.match(
+    page,
+    /onTimeUpdate=\{revealHeroBeforeHandoff\}/,
+    "the opening film should drive the pre-handoff reveal",
+  );
+  assert.match(
+    page,
+    /introPhase === "hero-revealing"/,
+    "the hero needs a distinct visible-before-open phase",
+  );
+  assert.match(
+    css,
+    /\.is-hero-visible \.hero-content > \*\s*\{[^}]*opacity:\s*1\b/,
+    "hero content must become visible before the entrance stage fades",
+  );
+  assert.match(
+    css,
+    /\.intro-hero-revealing \.envelope-opening-video/,
+    "the final garden frames must remain visible while the hero reveals",
+  );
+});
+
 test("uses media-driven envelope and curtain entrances instead of CSS drapes", async () => {
   const [page, css] = await Promise.all([
     readFile(new URL("../app/invitation.tsx", import.meta.url), "utf8"),
