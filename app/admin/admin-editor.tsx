@@ -9,12 +9,21 @@ import {
 
 type Status = { tone: "idle" | "busy" | "success" | "error"; message: string };
 type Field = { path: string; label: string; multiline?: boolean; hint?: string };
-type FieldGroup = { title: string; eyebrow: string; fields: Field[] };
+type FieldGroup = {
+  id: string;
+  title: string;
+  eyebrow: string;
+  description: string;
+  fields: Field[];
+  extra?: "schedule" | "swatches";
+};
 
 const FIELD_GROUPS: FieldGroup[] = [
   {
-    title: "წყვილი და გვერდი",
-    eyebrow: "Identity",
+    id: "identity",
+    title: "სახელები და გვერდი",
+    eyebrow: "მთავარი ინფორმაცია",
+    description: "წყვილის სახელები, მონოგრამა და გაზიარების ტექსტი.",
     fields: [
       { path: "couple.firstName", label: "პირველი სახელი" },
       { path: "couple.secondName", label: "მეორე სახელი" },
@@ -25,8 +34,10 @@ const FIELD_GROUPS: FieldGroup[] = [
     ],
   },
   {
+    id: "entrance",
     title: "კონვერტი და პირველი ეკრანი",
-    eyebrow: "Entrance & hero",
+    eyebrow: "დასაწყისი",
+    description: "კონვერტის მინიშნებები და პირველი ეკრანის ყველა წარწერა.",
     fields: [
       { path: "entrance.primaryLabel", label: "კონვერტის მთავარი მინიშნება" },
       { path: "entrance.secondaryLabel", label: "კონვერტის პატარა მინიშნება" },
@@ -35,49 +46,78 @@ const FIELD_GROUPS: FieldGroup[] = [
       { path: "hero.guestFallback", label: "სტუმრის ნაგულისხმევი მიმართვა", hint: "?to= ბმული ამ ტექსტს მხოლოდ კონკრეტული სტუმრისთვის შეცვლის." },
       { path: "hero.copy", label: "მთავარი ტექსტი", multiline: true },
       { path: "hero.scrollLabel", label: "ჩამოსვლის ღილაკი" },
-      { path: "event.dateShort", label: "მოკლე თარიღი" },
     ],
   },
   {
+    id: "note",
     title: "მოსაწვევის წერილი",
-    eyebrow: "Invitation note",
+    eyebrow: "მიმართვა",
+    description: "სტუმრისთვის განკუთვნილი წერილი და წყვილის ხელმოწერა.",
     fields: [
       { path: "note.kicker", label: "პატარა სათაური" },
       { path: "note.seal", label: "ბეჭდის ასოები" },
       { path: "note.body", label: "მოსაწვევის ტექსტი", multiline: true },
+      { path: "couple.signature", label: "ხელმოწერა" },
     ],
   },
   {
-    title: "თარიღი და ადგილი",
-    eyebrow: "Event details",
+    id: "date",
+    title: "თარიღი და დრო",
+    eyebrow: "Save the date",
+    description: "ღონისძიების თარიღი, დრო და კალენდრის ღილაკი.",
     fields: [
       { path: "event.dateIso", label: "ზუსტი თარიღი და დრო", hint: "ფორმატი: 2026-09-20T17:00:00+04:00" },
       { path: "event.dateLong", label: "სრული თარიღი" },
+      { path: "event.dateShort", label: "მოკლე თარიღი" },
       { path: "event.dateNumber", label: "რიცხვი" },
       { path: "event.month", label: "თვე" },
       { path: "event.year", label: "წელი" },
       { path: "event.day", label: "კვირის დღე" },
       { path: "event.time", label: "დრო" },
-      { path: "event.venue", label: "ადგილის სახელი" },
-      { path: "event.location", label: "მისამართი / რეგიონი" },
       { path: "dateSection.kicker", label: "თარიღის ბლოკის პატარა სათაური" },
       { path: "dateSection.calendarButton", label: "კალენდრის ღილაკი" },
+    ],
+  },
+  {
+    id: "venue",
+    title: "შეხვედრის ადგილი",
+    eyebrow: "Location",
+    description: "სივრცის სახელი, მისამართი და ადგილის ბლოკის სათაური.",
+    fields: [
+      { path: "event.venue", label: "ადგილის სახელი" },
+      { path: "event.location", label: "მისამართი / რეგიონი" },
       { path: "venue.kicker", label: "ადგილის ბლოკის პატარა სათაური" },
     ],
   },
   {
+    id: "schedule",
+    title: "დღის განრიგი",
+    eyebrow: "Timeline",
+    description: "დაამატეთ, წაშალეთ ან გადააკეთეთ დღის თითოეული ეტაპი.",
+    fields: [
+      { path: "schedule.kicker", label: "პატარა სათაური" },
+      { path: "schedule.title", label: "სათაური" },
+    ],
+    extra: "schedule",
+  },
+  {
+    id: "dress-code",
     title: "დრესკოდი",
     eyebrow: "Dress code",
+    description: "სტილის ტექსტი და სტუმრებისთვის რეკომენდებული ფერები.",
     fields: [
       { path: "dressCode.kicker", label: "პატარა სათაური" },
       { path: "dressCode.title", label: "სათაური" },
       { path: "dressCode.body", label: "აღწერა", multiline: true },
       { path: "dressCode.paletteLabel", label: "ფერების ხელმისაწვდომობის აღწერა" },
     ],
+    extra: "swatches",
   },
   {
+    id: "countdown-footer",
     title: "დათვლა და ფუტერი",
-    eyebrow: "Countdown & footer",
+    eyebrow: "დასასრული",
+    description: "უკუთვლის ერთეულები და მოსაწვევის ბოლო ტექსტი.",
     fields: [
       { path: "countdown.kicker", label: "დათვლის სათაური" },
       { path: "countdown.ariaLabel", label: "დათვლის ხელმისაწვდომობის აღწერა" },
@@ -158,6 +198,7 @@ export default function AdminEditor({
   const [authenticated, setAuthenticated] = useState(initiallyAuthenticated);
   const [password, setPassword] = useState("");
   const [content, setContent] = useState<InvitationContent | null>(initialContent);
+  const [openSections, setOpenSections] = useState<Set<string>>(() => new Set(["identity"]));
   const [status, setStatus] = useState<Status>(
     initiallyAuthenticated && !initialContent
       ? { tone: "error", message: "მონაცემთა საცავი ჯერ მზად არ არის. განაახლეთ გვერდი." }
@@ -230,6 +271,16 @@ export default function AdminEditor({
     setStatus({ tone: "idle", message: "" });
   };
 
+  const setSectionOpen = (section: string, open: boolean) => {
+    setOpenSections((current) => {
+      if (current.has(section) === open) return current;
+      const next = new Set(current);
+      if (open) next.add(section);
+      else next.delete(section);
+      return next;
+    });
+  };
+
   if (!authenticated) {
     return (
       <main className="admin-login-shell">
@@ -268,82 +319,105 @@ export default function AdminEditor({
       </header>
 
       <div className="admin-layout">
+        <nav className="admin-section-menu" aria-label="რედაქტორის სექციები">
+          <p>სექციები</p>
+          {FIELD_GROUPS.map((group, index) => (
+            <a key={group.id} href={`#editor-${group.id}`} onClick={() => setSectionOpen(group.id, true)}>
+              <span>{String(index + 1).padStart(2, "0")}</span>
+              {group.title}
+            </a>
+          ))}
+          <a href="#editor-theme" onClick={() => setSectionOpen("theme", true)}><span>09</span>ფონტები და ფერები</a>
+        </nav>
+
         <div className="admin-sections">
           {FIELD_GROUPS.map((group, groupIndex) => (
-            <section className="admin-panel" key={group.title}>
-              <div className="admin-panel-heading">
+            <details
+              className="admin-panel"
+              id={`editor-${group.id}`}
+              key={group.id}
+              open={openSections.has(group.id)}
+              onToggle={(event) => setSectionOpen(group.id, event.currentTarget.open)}
+            >
+              <summary className="admin-panel-heading">
                 <span>{String(groupIndex + 1).padStart(2, "0")}</span>
-                <div><p>{group.eyebrow}</p><h2>{group.title}</h2></div>
-              </div>
-              <div className="admin-grid">
-                {group.fields.map((field) => <EditorField key={field.path} field={field} content={content} onChange={setContent} />)}
-              </div>
-              {group.title === "მოსაწვევის წერილი" && (
-                <label className="admin-field admin-signature-field">
-                  <span>ხელმოწერა</span>
-                  <input value={content.couple.signature} onChange={(event) => setContent({ ...content, couple: { ...content.couple, signature: event.target.value } })} />
-                </label>
-              )}
-              {group.title === "დრესკოდი" && (
-                <div className="admin-swatches">
-                  <p>დრესკოდის ფერები</p>
-                  <div>{content.dressCode.swatches.map((swatch, index) => (
-                    <label key={`${index}-${swatch}`}><input type="color" value={swatch} onChange={(event) => {
-                      const swatches = [...content.dressCode.swatches];
-                      swatches[index] = event.target.value;
-                      setContent({ ...content, dressCode: { ...content.dressCode, swatches } });
-                    }} /><span>{swatch}</span></label>
-                  ))}</div>
+                <div>
+                  <p>{group.eyebrow}</p>
+                  <h2>{group.title}</h2>
+                  <small>{group.description}</small>
                 </div>
-              )}
-            </section>
+                <i aria-hidden="true" />
+              </summary>
+              <div className="admin-panel-content">
+                <div className="admin-grid">
+                  {group.fields.map((field) => <EditorField key={field.path} field={field} content={content} onChange={setContent} />)}
+                </div>
+                {group.extra === "schedule" && (
+                  <div className="admin-timeline-list">
+                    {content.schedule.items.map((item, index) => (
+                      <div className="admin-timeline-item" key={index}>
+                        <span>{String(index + 1).padStart(2, "0")}</span>
+                        <label>დრო<input value={item.time} onChange={(event) => {
+                          const items = structuredClone(content.schedule.items);
+                          items[index].time = event.target.value;
+                          setContent({ ...content, schedule: { ...content.schedule, items } });
+                        }} /></label>
+                        <label>სათაური<input value={item.title} onChange={(event) => {
+                          const items = structuredClone(content.schedule.items);
+                          items[index].title = event.target.value;
+                          setContent({ ...content, schedule: { ...content.schedule, items } });
+                        }} /></label>
+                        <label>აღწერა<textarea rows={2} value={item.detail} onChange={(event) => {
+                          const items = structuredClone(content.schedule.items);
+                          items[index].detail = event.target.value;
+                          setContent({ ...content, schedule: { ...content.schedule, items } });
+                        }} /></label>
+                        <button type="button" onClick={() => setContent({ ...content, schedule: { ...content.schedule, items: content.schedule.items.filter((_, itemIndex) => itemIndex !== index) } })} disabled={content.schedule.items.length <= 1}>წაშლა</button>
+                      </div>
+                    ))}
+                    <button className="admin-add-row" type="button" onClick={() => setContent({ ...content, schedule: { ...content.schedule, items: [...content.schedule.items, { time: "20:00", title: "ახალი ეტაპი", detail: "აღწერა" }] } })} disabled={content.schedule.items.length >= 8}>+ ეტაპის დამატება</button>
+                  </div>
+                )}
+                {group.extra === "swatches" && (
+                  <div className="admin-swatches">
+                    <p>დრესკოდის ფერები</p>
+                    <div>{content.dressCode.swatches.map((swatch, index) => (
+                      <label key={`${index}-${swatch}`}><input type="color" value={swatch} onChange={(event) => {
+                        const swatches = [...content.dressCode.swatches];
+                        swatches[index] = event.target.value;
+                        setContent({ ...content, dressCode: { ...content.dressCode, swatches } });
+                      }} /><span>{swatch}</span></label>
+                    ))}</div>
+                  </div>
+                )}
+              </div>
+            </details>
           ))}
 
-          <section className="admin-panel">
-            <div className="admin-panel-heading"><span>07</span><div><p>Timeline</p><h2>დღის განრიგი</h2></div></div>
-            <div className="admin-grid">
-              <EditorField field={{ path: "schedule.kicker", label: "პატარა სათაური" }} content={content} onChange={setContent} />
-              <EditorField field={{ path: "schedule.title", label: "სათაური" }} content={content} onChange={setContent} />
+          <details
+            className="admin-panel"
+            id="editor-theme"
+            open={openSections.has("theme")}
+            onToggle={(event) => setSectionOpen("theme", event.currentTarget.open)}
+          >
+            <summary className="admin-panel-heading">
+              <span>09</span>
+              <div><p>დიზაინი</p><h2>ფონტები და ფერები</h2><small>მთელი მოსაწვევის საერთო ვიზუალური სისტემა.</small></div>
+              <i aria-hidden="true" />
+            </summary>
+            <div className="admin-panel-content">
+              <div className="admin-font-grid">
+                <label><span>სათაურების ფონტი</span><select value={content.theme.displayFont} onChange={(event) => setContent({ ...content, theme: { ...content.theme, displayFont: event.target.value as FontChoice } })}>{FONT_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label>
+                <label><span>ძირითადი ტექსტის ფონტი</span><select value={content.theme.bodyFont} onChange={(event) => setContent({ ...content, theme: { ...content.theme, bodyFont: event.target.value as FontChoice } })}>{FONT_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label>
+              </div>
+              <div className="admin-color-grid">
+                {COLOR_FIELDS.map(({ key, label }) => {
+                  const value = content.theme[key] as string;
+                  return <label key={key}><input type="color" value={value} onChange={(event) => setContent({ ...content, theme: { ...content.theme, [key]: event.target.value } })} /><span>{label}<small>{value}</small></span></label>;
+                })}
+              </div>
             </div>
-            <div className="admin-timeline-list">
-              {content.schedule.items.map((item, index) => (
-                <div className="admin-timeline-item" key={index}>
-                  <span>{String(index + 1).padStart(2, "0")}</span>
-                  <label>დრო<input value={item.time} onChange={(event) => {
-                    const items = structuredClone(content.schedule.items);
-                    items[index].time = event.target.value;
-                    setContent({ ...content, schedule: { ...content.schedule, items } });
-                  }} /></label>
-                  <label>სათაური<input value={item.title} onChange={(event) => {
-                    const items = structuredClone(content.schedule.items);
-                    items[index].title = event.target.value;
-                    setContent({ ...content, schedule: { ...content.schedule, items } });
-                  }} /></label>
-                  <label>აღწერა<textarea rows={2} value={item.detail} onChange={(event) => {
-                    const items = structuredClone(content.schedule.items);
-                    items[index].detail = event.target.value;
-                    setContent({ ...content, schedule: { ...content.schedule, items } });
-                  }} /></label>
-                  <button type="button" onClick={() => setContent({ ...content, schedule: { ...content.schedule, items: content.schedule.items.filter((_, itemIndex) => itemIndex !== index) } })} disabled={content.schedule.items.length <= 1}>წაშლა</button>
-                </div>
-              ))}
-              <button className="admin-add-row" type="button" onClick={() => setContent({ ...content, schedule: { ...content.schedule, items: [...content.schedule.items, { time: "20:00", title: "ახალი ეტაპი", detail: "აღწერა" }] } })} disabled={content.schedule.items.length >= 8}>+ ეტაპის დამატება</button>
-            </div>
-          </section>
-
-          <section className="admin-panel">
-            <div className="admin-panel-heading"><span>08</span><div><p>Visual system</p><h2>ფონტები და ფერები</h2></div></div>
-            <div className="admin-font-grid">
-              <label><span>სათაურების ფონტი</span><select value={content.theme.displayFont} onChange={(event) => setContent({ ...content, theme: { ...content.theme, displayFont: event.target.value as FontChoice } })}>{FONT_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label>
-              <label><span>ძირითადი ტექსტის ფონტი</span><select value={content.theme.bodyFont} onChange={(event) => setContent({ ...content, theme: { ...content.theme, bodyFont: event.target.value as FontChoice } })}>{FONT_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label>
-            </div>
-            <div className="admin-color-grid">
-              {COLOR_FIELDS.map(({ key, label }) => {
-                const value = content.theme[key] as string;
-                return <label key={key}><input type="color" value={value} onChange={(event) => setContent({ ...content, theme: { ...content.theme, [key]: event.target.value } })} /><span>{label}<small>{value}</small></span></label>;
-              })}
-            </div>
-          </section>
+          </details>
         </div>
 
         <aside className="admin-publish-card">

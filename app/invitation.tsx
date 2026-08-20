@@ -258,6 +258,15 @@ export default function Invitation({ content }: { content: InvitationContent }) 
         </div>
       </section>
 
+      <section className="venue-section">
+        <div className="venue-card" data-reveal>
+          <p className="section-kicker">{content.venue.kicker}</p>
+          <h2>{content.event.venue}</h2>
+          <p>{content.event.location}</p>
+          <span>{content.event.dateLong}</span>
+        </div>
+      </section>
+
       <section className="schedule-section">
         <div className="schedule-panel">
           <div className="schedule-heading" data-reveal>
@@ -272,15 +281,6 @@ export default function Invitation({ content }: { content: InvitationContent }) 
               </li>
             ))}
           </ol>
-        </div>
-      </section>
-
-      <section className="venue-section">
-        <div className="venue-card" data-reveal>
-          <p className="section-kicker">{content.venue.kicker}</p>
-          <h2>{content.event.venue}</h2>
-          <p>{content.event.location}</p>
-          <span>{content.event.dateLong}</span>
         </div>
       </section>
 

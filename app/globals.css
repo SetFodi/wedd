@@ -115,16 +115,15 @@ h1 span { color: var(--gold); font: italic .72em/1 var(--display-latin); }
 .corner-flower-left { left: -94px; top: -68px; }
 .corner-flower-right { right: -100px; bottom: -70px; transform: rotate(180deg); }
 
-.date-section { position: relative; min-height: 760px; display: grid; place-items: center; padding: 92px 28px; overflow: hidden; background: linear-gradient(180deg, #edf2f3 0%, var(--ivory) 88%); }
-.date-section::before { content: ""; position: absolute; inset: 34px 20px; border: 1px solid color-mix(in srgb, var(--gold) 35%, transparent); border-radius: 240px 240px 48px 48px; }
-.date-section::after { content: ""; position: absolute; inset: 0; opacity: .54; background: radial-gradient(circle at 12% 12%, rgba(255,255,255,.95), transparent 25%), radial-gradient(circle at 88% 17%, rgba(180,202,213,.45), transparent 24%), linear-gradient(120deg, transparent 0 42%, rgba(255,255,255,.65) 43% 45%, transparent 46% 100%); }
-.date-orbit { position: absolute; width: 430px; aspect-ratio: 1; border: 1px solid rgba(255,255,255,.78); border-radius: 50%; box-shadow: 0 0 0 48px rgba(255,255,255,.2), 0 0 0 96px rgba(186,204,213,.11); }
-.date-card { position: relative; z-index: 1; width: min(370px, 100%); min-height: 540px; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 72px 28px 54px; border: 1px solid color-mix(in srgb, var(--gold) 46%, transparent); border-radius: 180px 180px 38px 38px; background: color-mix(in srgb, var(--ivory) 87%, transparent); box-shadow: 0 24px 65px rgba(38,61,80,.11); backdrop-filter: blur(12px); text-align: center; }
-.date-card::before { content: "✦"; margin-bottom: 24px; color: var(--gold); font-size: 12px; }
-.date-card .section-kicker { margin-bottom: 28px; color: var(--gold); }
-.date-number { display: block; color: var(--ink); font: 400 132px/.68 var(--display-latin); letter-spacing: -.07em; }
-.date-card h2 { margin: 22px 0 10px; font: 400 34px/1.05 var(--display); }
-.date-card > p:not(.section-kicker) { margin: 0 0 38px; color: var(--ink-soft); font-size: 11px; letter-spacing: .15em; }
+.date-section { position: relative; min-height: 820px; display: flex; align-items: flex-end; padding: 36px; overflow: hidden; background: linear-gradient(180deg, transparent 42%, rgba(247,242,232,.06) 61%, rgba(247,242,232,.42) 100%), url("/date-pavilion.webp") center / cover no-repeat; }
+.date-section::before { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(247,242,232,.05), transparent 20% 80%, rgba(247,242,232,.05)); pointer-events: none; }
+.date-orbit { display: none; }
+.date-card { position: relative; z-index: 1; width: 100%; min-height: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 44px 24px 38px; border: 1px solid color-mix(in srgb, var(--gold) 42%, transparent); border-radius: 108px 108px 28px 28px; background: rgba(247,242,232,.9); box-shadow: 0 22px 60px rgba(38,61,80,.13); backdrop-filter: blur(13px); text-align: center; }
+.date-card::before { content: "✦"; margin-bottom: 16px; color: var(--gold); font-size: 11px; }
+.date-card .section-kicker { margin-bottom: 22px; color: var(--gold); }
+.date-number { display: block; color: var(--ink); font: 400 96px/.68 var(--display-latin); letter-spacing: -.07em; }
+.date-card h2 { margin: 18px 0 9px; font: 400 31px/1.05 var(--display); }
+.date-card > p:not(.section-kicker) { margin: 0 0 30px; color: var(--ink-soft); font-size: 10px; letter-spacing: .15em; }
 .date-card a { display: inline-block; padding: 14px 23px 12px; border: 1px solid color-mix(in srgb, var(--gold) 68%, transparent); border-radius: 999px; background: rgba(247,242,232,.6); text-decoration: none; font-size: 10px; font-weight: 600; letter-spacing: .1em; transition: color .25s, background .25s, border-color .25s; }
 .date-card a:hover { color: var(--ivory); border-color: var(--ink); background: var(--ink); }
 
@@ -150,10 +149,11 @@ h1 span { color: var(--gold); font: italic .72em/1 var(--display-latin); }
 .venue-card p { margin: 0 0 20px; font-size: 13px; }
 .venue-card span { font: 400 17px/1 var(--display); letter-spacing: .12em; }
 
-.dress-section { min-height: 650px; display: grid; place-items: center; padding: 100px 38px; background: #ece7dd; text-align: center; }
-.dress-section > div { max-width: 360px; }
-.dress-section h2 { margin: 0 0 25px; font-size: 34px; font-weight: 400; }
-.dress-section p:not(.section-kicker) { margin: 0; font-size: 14px; line-height: 1.9; }
+.dress-section { min-height: 820px; display: flex; align-items: flex-end; padding: 36px; background: linear-gradient(180deg, transparent 42%, rgba(247,242,232,.08) 61%, rgba(247,242,232,.44) 100%), url("/dress-code-editorial.webp") center / cover no-repeat; text-align: center; }
+.dress-section > div { width: 100%; max-width: none; padding: 44px 26px 38px; border: 1px solid color-mix(in srgb, var(--gold) 40%, transparent); border-radius: 108px 108px 28px 28px; background: rgba(247,242,232,.9); box-shadow: 0 22px 60px rgba(38,61,80,.13); backdrop-filter: blur(13px); }
+.dress-section .section-kicker { color: var(--gold); }
+.dress-section h2 { margin: 0 0 21px; font-size: 34px; font-weight: 400; }
+.dress-section p:not(.section-kicker) { margin: 0; color: var(--ink-soft); font-size: 13px; line-height: 1.85; }
 .palette { display: flex; justify-content: center; gap: 12px; margin-top: 38px; }
 .palette i { width: 42px; height: 42px; border-radius: 50%; box-shadow: 0 0 0 4px #ece7dd, 0 0 0 5px rgba(23,50,83,.13); }
 .swatch-1 { background: #c8b69b; }

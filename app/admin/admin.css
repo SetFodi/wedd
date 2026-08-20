@@ -89,19 +89,39 @@
 
 .admin-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 280px;
+  grid-template-columns: 190px minmax(0, 1fr) 270px;
   gap: 28px;
   width: min(calc(100% - 48px), 1320px);
   margin: 34px auto 0;
   align-items: start;
 }
 
+.admin-section-menu {
+  position: sticky;
+  top: 22px;
+  display: grid;
+  gap: 3px;
+  padding: 18px;
+  border: 1px solid var(--admin-rule);
+  background: rgba(255,255,255,.62);
+}
+.admin-section-menu > p { margin: 0 0 10px; color: var(--admin-gold); font-size: 9px; font-weight: 700; letter-spacing: .18em; text-transform: uppercase; }
+.admin-section-menu a { display: grid; grid-template-columns: 27px 1fr; align-items: center; gap: 7px; padding: 9px 7px; color: rgba(20,45,75,.68); text-decoration: none; font-size: 10px; line-height: 1.45; transition: color .2s ease, background .2s ease; }
+.admin-section-menu a:hover { color: var(--admin-navy); background: rgba(223,234,241,.55); }
+.admin-section-menu a span { color: var(--admin-gold); font: italic 14px/1 "Cormorant Garamond", Georgia, serif; }
+
 .admin-sections { display: grid; gap: 20px; }
-.admin-panel { padding: 34px; border: 1px solid var(--admin-rule); background: rgba(255,255,255,.72); box-shadow: 0 12px 44px rgba(35, 46, 56, .045); }
-.admin-panel-heading { display: flex; align-items: center; gap: 18px; margin-bottom: 28px; padding-bottom: 20px; border-bottom: 1px solid var(--admin-rule); }
+.admin-panel { scroll-margin-top: 22px; border: 1px solid var(--admin-rule); background: rgba(255,255,255,.72); box-shadow: 0 12px 44px rgba(35, 46, 56, .045); }
+.admin-panel-heading { position: relative; display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 18px; padding: 25px 30px; cursor: pointer; list-style: none; }
+.admin-panel-heading::-webkit-details-marker { display: none; }
 .admin-panel-heading > span { color: var(--admin-gold); font: italic 28px/1 "Cormorant Garamond", Georgia, serif; }
 .admin-panel-heading p { margin: 0 0 5px; color: var(--admin-gold); font: 600 9px/1 "Cormorant Garamond", Georgia, serif; letter-spacing: .24em; text-transform: uppercase; }
 .admin-panel-heading h2 { margin: 0; font-size: 22px; font-weight: 400; }
+.admin-panel-heading small { display: block; margin-top: 6px; color: rgba(20,45,75,.52); font-size: 10px; font-weight: 400; line-height: 1.55; }
+.admin-panel-heading > i { width: 12px; height: 12px; border-right: 1px solid var(--admin-gold); border-bottom: 1px solid var(--admin-gold); transform: rotate(45deg) translate(-2px, 2px); transition: transform .22s ease; }
+.admin-panel[open] .admin-panel-heading > i { transform: rotate(225deg) translate(-2px, 2px); }
+.admin-panel[open] .admin-panel-heading { border-bottom: 1px solid var(--admin-rule); }
+.admin-panel-content { padding: 28px 30px 32px; }
 
 .admin-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px; }
 .admin-field { display: grid; align-content: start; gap: 8px; }
@@ -135,8 +155,6 @@
 .admin-timeline-item input:focus,
 .admin-timeline-item textarea:focus { border-color: var(--admin-gold); background: #fff; box-shadow: 0 0 0 3px rgba(180,141,80,.1); }
 .admin-field small { color: rgba(20,45,75,.48); font-size: 9px; line-height: 1.55; }
-.admin-signature-field { margin-top: 22px; }
-
 .admin-swatches { margin-top: 26px; padding-top: 22px; border-top: 1px solid var(--admin-rule); }
 .admin-swatches > p { margin: 0 0 14px; font-size: 11px; font-weight: 600; }
 .admin-swatches > div { display: flex; flex-wrap: wrap; gap: 10px; }
@@ -176,6 +194,13 @@
 .admin-status.is-success { color: #27563d; background: #e0eee5; }
 .admin-status.is-busy { color: #725527; background: #f4ead5; }
 
+@media (max-width: 1180px) {
+  .admin-layout { grid-template-columns: minmax(0, 1fr) 270px; }
+  .admin-section-menu { position: static; grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 4px; }
+  .admin-section-menu > p { width: 100%; }
+  .admin-section-menu a { grid-template-columns: auto 1fr; }
+}
+
 @media (max-width: 980px) {
   .admin-header { display: grid; padding: 42px 28px; }
   .admin-layout { grid-template-columns: 1fr; }
@@ -194,7 +219,11 @@
   .admin-header { gap: 28px; padding: 38px 22px; }
   .admin-header nav { flex-wrap: wrap; }
   .admin-layout { width: min(calc(100% - 24px), 1320px); margin-top: 12px; }
-  .admin-panel { padding: 25px 18px; }
+  .admin-section-menu { gap: 2px; padding: 13px; }
+  .admin-section-menu a { padding: 7px; }
+  .admin-panel-heading { gap: 12px; padding: 21px 18px; }
+  .admin-panel-heading small { display: none; }
+  .admin-panel-content { padding: 22px 18px 25px; }
   .admin-grid,
   .admin-font-grid,
   .admin-color-grid { grid-template-columns: 1fr; }
@@ -204,5 +233,5 @@
   .admin-timeline-item button { grid-column: 2; justify-self: start; }
   .admin-publish-card { grid-template-columns: 1fr; }
   .admin-publish-card > button { grid-column: 1; width: 100%; }
-  .admin-publish-card .admin-status { display: none; }
+  .admin-publish-card .admin-status { grid-column: 1; grid-row: auto; }
 }

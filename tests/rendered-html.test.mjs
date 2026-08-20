@@ -97,6 +97,15 @@ test("server-renders the complete wedding invitation", async () => {
   assert.match(html, /რუსთაველის ქ\. 28, ბათუმი/);
   assert.match(html, /კალენდარში დამატება/);
   assert.match(html, /ქორწილამდე დარჩენილი დრო/);
+  assert.ok(
+    html.indexOf("შერატონ ბათუმი") < html.indexOf("ამ დღის რიტმი"),
+    "the event timeline must appear directly after the venue",
+  );
+  assert.match(
+    html,
+    /class="venue-section"[\s\S]*?<\/section>\s*<section class="schedule-section"/,
+    "the venue and timeline must be adjacent sections",
+  );
   assert.doesNotMatch(html, /codex-preview|Your site is taking shape|react-loading-skeleton/);
 
   const generalHtml = await (await render("/")).text();
@@ -162,6 +171,33 @@ test("keeps the admin editor private and unlinked from the invitation", async ()
   assert.doesNotMatch(invitationHtml, /href="\/admin"/);
 });
 
+test("keeps every invitation content group available in the admin editor", async () => {
+  const editorSource = await readFile(new URL("../app/admin/admin-editor.tsx", import.meta.url), "utf8");
+  const editableTextPaths = [
+    "meta.title", "meta.description",
+    "couple.firstName", "couple.secondName", "couple.signature", "couple.monogram", "couple.calendarTitle",
+    "event.dateIso", "event.dateLong", "event.dateShort", "event.dateNumber", "event.month", "event.year", "event.day", "event.time", "event.venue", "event.location",
+    "entrance.primaryLabel", "entrance.secondaryLabel", "entrance.ariaLabel",
+    "hero.eyebrow", "hero.guestFallback", "hero.copy", "hero.scrollLabel",
+    "note.kicker", "note.seal", "note.body",
+    "dateSection.kicker", "dateSection.calendarButton",
+    "schedule.kicker", "schedule.title",
+    "venue.kicker",
+    "dressCode.kicker", "dressCode.title", "dressCode.body", "dressCode.paletteLabel",
+    "countdown.kicker", "countdown.ariaLabel", "countdown.days", "countdown.hours", "countdown.minutes", "countdown.seconds",
+    "footer.text", "footer.date",
+  ];
+
+  for (const path of editableTextPaths) {
+    assert.match(editorSource, new RegExp(`path: ["']${path.replace(".", "\\.")}["']`), `${path} must stay editable`);
+  }
+  assert.match(editorSource, /content\.schedule\.items\.map/);
+  assert.match(editorSource, /content\.dressCode\.swatches\.map/);
+  assert.match(editorSource, /COLOR_FIELDS\.map/);
+  assert.match(editorSource, /content\.theme\.displayFont/);
+  assert.match(editorSource, /content\.theme\.bodyFont/);
+});
+
 test("emits a share card and removes all starter preview artifacts", async () => {
   const response = await render();
   const html = await response.text();
@@ -171,6 +207,8 @@ test("emits a share card and removes all starter preview artifacts", async () =>
   assert.match(html, /https:\/\/invitation\.test\/og\.png/);
   assert.doesNotMatch(packageJson, /react-loading-skeleton/);
   await access(new URL("../public/sheraton-batumi-venue.webp", import.meta.url));
+  await access(new URL("../public/date-pavilion.webp", import.meta.url));
+  await access(new URL("../public/dress-code-editorial.webp", import.meta.url));
   await access(new URL("../public/og.png", import.meta.url));
   await assert.rejects(access(new URL("app/_sites-preview", projectRoot)));
 });
